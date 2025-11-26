@@ -1,0 +1,1 @@
+EnergyPlus weather data downloaded from: https://energyplus.net/weather
