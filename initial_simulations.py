@@ -1,61 +1,106 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Nov 26 12:13:38 2025
+Simulating residential building demand with OCHRE
 
 @author: ucbva19
 """
 import os
 import datetime as dt
-
+import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
-from ochre import Dwelling
+from ochre import Dwelling, CreateFigures, Analysis
 from ochre.utils import default_input_path  # for using sample files
 
 # Plotting figures default
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 600
-# plt.rcParams['figure.figsize'] = (4,4) # Height can be changed
-# plt.rcParams['font.size'] = 7
-# plt.rcParams['font.family'] = 'serif'
-# plt.rcParams['font.serif'] = 'Times New Roman'
-# plt.rcParams["mathtext.fontset"] = 'dejavuserif'
 
 #%%
+
+# Pick any of the included HPXML + schedule files
+hpxml_file = os.path.join(default_input_path, "Input Files", "bldg0112631-up11.xml")
+schedule_file = os.path.join(default_input_path, "Input Files", "bldg0112631_schedule.csv")
+weather_file = os.path.join(default_input_path, "Weather", "USA_CO_Denver.Intl.AP.725650_TMY3.epw")
+
+print("HPXML:", hpxml_file)
+print("Schedule:", schedule_file)
+print("Weather:", weather_file)
+
+schedule = pd.read_csv(schedule_file)
+weather = pd.read_csv(weather_file)
+
+
+# Define Dwelling arguments
 dwelling_args = {
-    # Timing parameters
-    "start_time": dt.datetime(2018, 1, 1, 0, 0),  # (year, month, day, hour, minute)
-    "time_res": dt.timedelta(minutes=10),         # time resolution of the simulation
-    "duration": dt.timedelta(days=3),             # duration of the simulation
+    "start_time": dt.datetime(2018, 1, 1, 0, 0),
+    "time_res": dt.timedelta(minutes = 15),
+    "duration": dt.timedelta(days = 30),
 
-    # Input files
-    "hpxml_file": os.path.join(default_input_path, "Input Files", "bldg0112631-up11.xml"),
-    "hpxml_schedule_file": os.path.join(default_input_path, "Input Files", "bldg0112631_schedule.csv"),
-    "weather_file": os.path.join(default_input_path, "Weather", "USA_CO_Denver.Intl.AP.725650_TMY3.epw"),
-}
+    "hpxml_file": hpxml_file,
+    "hpxml_schedule_file": schedule_file,
+    "weather_file": weather_file,
+    
+    "verbosity": 7,
+    "metrics_verbosity": 3,}
 
-# Create Dwelling model
+# Create model and simulate
 dwelling = Dwelling(**dwelling_args)
 
+print( dwelling.equipment.keys() )
 
+# Simulate
 df, metrics, hourly = dwelling.simulate()
 
-#%%
-from ochre import Analysis
-
-# calculate metrics from the time series results
-metrics2 = Analysis.calculate_metrics(df)
 
 #%%
-from ochre import CreateFigures
-
 # Plot results
+fig = CreateFigures.plot_power_stack(df[:1000])
+
 fig = CreateFigures.plot_power_stack(df)
+
+#%%
+# effect of outdoor temperature
+fig, ax = plt.subplots()            
+df[['Temperature - Indoor (C)', 'Temperature - Outdoor (C)']].plot(ax=ax)
+
+# fig, ax = plt.subplots()            
+# plt.scatter(df['HVAC Heating'])
+# df[['Temperature - Indoor (C)', 'Temperature - Outdoor (C)']].plot(ax=ax)
+#%%
+fig = CreateFigures.plot_daily_profile(df, 'Total Electric Power (kW)', plot_max=True, plot_min=True)
+
+# Effect of temperature via scatterplot
+fig, ax = plt.subplots()
+plt.scatter(df['Temperature - Outdoor (C)'].values, df['HVAC Heating Electric Power (kW)'].values)
+plt.xlabel('Total Electric Power (kW)')
+plt.ylabel('Temperature - Outdoor (C)')
+
+
+# %% New building with higher efficiency
+
+#%%
+
+# # calculate metrics from the time series results
+# metrics2 = Analysis.calculate_metrics(df)
+
+# cols_to_plot = [
+#     "HVAC Heating Setpoint (C)",
+#     "Temperature - Indoor (C)",
+#     "Temperature - Outdoor (C)",
+#     "Unmet HVAC Load (C)",
+#     "HVAC Heating Electric Power (kW)",]
+
+# df.loc[:, cols_to_plot].plot()
+#%%
+
+
 
 
 #%%
 # Average daily profile
-fig = CreateFigures.plot_daily_profile(df, 'Total Electric Power (kW)', plot_max=False, plot_min=False)
+
 
 #%%
 df['Hour'] = df.index.hour
