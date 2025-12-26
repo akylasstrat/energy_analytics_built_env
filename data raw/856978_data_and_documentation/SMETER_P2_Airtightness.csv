@@ -1,0 +1,89 @@
+House_ID,Vent status,Pulse Test m3/(h.m2) @ 4Pa,Pulse Test h-1 @ 4Pa,Blower Door Test m3/(h.m2) @ 50Pa,Blower Door Test h-1 @ 50Pa
+HH01,All Vents Open,4.59,4.956,16.99,18.35
+,All Vents Open,3.593,3.88,,
+,All Vents Open,5.559,6.002,,
+,Trickle Vents Only Closed,4.15,4.48,15.91,17.18
+,All Vents Closed,3.105,3.352,15.52,16.76
+HH02,All Vents Open,1.83,2.74,9.17,13.76
+,Trickle Vents Only Closed,1.77,2.66,7.33,11
+,All Vents Closed,1.53,2.29,6.54,9.81
+HH03,All Vents Open,2.18,2.388,10.5,11.5
+,Trickle Vents Only Closed,1.172,1.284,7.98,8.74
+,All Vents Closed,1.243,1.362,6.86,7.51
+HH04,All Vents Open,1.589,2.252,8.9,12.62
+,All Vents Closed,1.174,1.664,6.53,9.26
+HH05,All Vents Open,6.875,7.435,20.26,21.91
+,All Vents Closed,3.536,3.824,14.82,16.02
+HH06,All Vents Open,3.676,3.711,13.91,14.04
+,All Vents Closed,2.21,2.231,10.47,10.57
+HH07,All Vents Open,2.174,3.122,8.56,12.27
+,Trickle Vents Only Closed,1.322,1.898,7.96,11.4
+,All Vents Closed,1.434,2.06,5.99,8.58
+HH08,Trickle Vents Only Closed,3.319,3.432,9.84,10.18
+,Trickle Vents Only Closed,2.645,2.735,,
+HH09,All Vents Open,5.539,8.099,14.93,22.03
+,All Vents Open,6.46,9.446,,
+,Trickle Vents Only Closed,3.446,5.039,14.49,21.39
+,All Vents Closed,2.933,4.289,11.92,17.59
+HH10,All Vents Open,2.348,2.595,12.02,10.45
+,All Vents Closed,1.321,1.46,10.43,9.21
+HH11,All Vents Open,2.945,3.486,14.64,14.36
+,All Vents Closed,2.762,3.269,12.96,12.72
+,All Vents Closed,,,13.83,13.57
+HH12,All Vents Open,1.127,1.665,8.42,12.44
+,All Vents Open,1.322,1.954,,
+,All Vents Open,1.111,1.642,,
+,All Vents Closed,0.588,0.868,5.76,8.51
+,All Vents Closed,0.224,0.331,,
+,All Vents Closed,0.734,1.085,,
+HH13,All Vents Open,4.632,6.771,14.01,20.6
+,Trickle Vents Only Closed,3.159,4.615,12.17,17.89
+,Trickle Vents Only Closed,2.777,4.059,,
+,All Vents Closed,2.111,3.086,9.52,14
+HH14,All Vents Open,1.99,2.107,9.06,9.59
+,All Vents Closed,1.277,1.352,7.49,7.93
+HH15,All Vents Open,4.816,5.075,16.05,16.91
+,All Vents Open,5.265,5.548,,
+,All Vents Closed,3.511,3.7,12.73,13.41
+HH16,All Vents Open,2.396,2.544,13.56,13.11
+,All Vents Open,,,13.12,12.68
+,All Vents Closed,1.74,1.847,10.26,9.91
+,All Vents Closed,,,9.89,9.46
+HH17,All Vents Open,13.869,15.396,20.1,19.97
+,All Vents Open,,,19.38,19.25
+,All Vents Closed,3.54,3.93,17.25,17.13
+,All Vents Closed,,,16.7,16.18
+HH18,All Vents Open,2.301,3.362,11.37,16.71
+,All Vents Closed,1.814,2.651,9.58,14.08
+HH19,All Vents Open,4.993,5.59,14.54,16.29
+HH20,All Vents Open,11.451,11.994,13.46,14.65
+,All Vents Closed,1.444,1.512,9.79,10.66
+HH21,All Vents Closed,2.041,2.311,9.84,11.14
+HH22,All Vents Open,1.469,1.577,11.44,12.28
+,All Vents Open,1.222,1.312,,
+,All Vents Closed,1.202,1.29,9.57,10.28
+,All Vents Closed,1.023,1.099,,
+HH23,All Vents Open,2.313,2.383,10.99,11.32
+,All Vents Closed,1.686,1.737,8.66,8.92
+HH24,All Vents Open,2.574,3.78,9.97,12.2
+,All Vents Open,,,9.98,12.21
+,All Vents Closed,1.687,2.478,7.33,8.96
+,All Vents Closed,,,7.03,8.6
+HH25,All Vents Open,2.565,2.731,13.44,14.31
+,All Vents Closed,1.832,1.951,11.01,11.72
+HH26,All Vents Open,5.638,6.156,20.71,19.23
+,All Vents Open,,,20.48,19.01
+,All Vents Closed,2.867,3.134,14.91,13.84
+,All Vents Closed,,,14.77,13.71
+HH27,All Vents Open,2.095,2.47,10.94,11.64
+,All Vents Closed,1.184,1.396,9.2,9.79
+HH28,All Vents Open,2.553,2.718,11.6,10.67
+,All Vents Open,,,11.32,10.41
+,All Vents Closed,1.529,1.628,7.63,7.02
+,All Vents Closed,,,7.57,6.97
+HH29,All Vents Open,3.306,3.494,38.95,42.64
+,All Vents Open,,,20.79,18.99
+,All Vents Closed,3.011,3.182,15.67,14.31
+,All Vents Closed,,,15.55,14.21
+HH30,All Vents Open,3.553,3.737,15.6,16.4
+,All Vents Closed,2.822,2.968,13.04,13.72
