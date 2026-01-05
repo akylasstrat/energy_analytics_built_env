@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Dec 18 15:24:48 2025
+Smart meter analytics data
 
-@author: ucbva19
+@author: a.stratigakos@ucl.ac.uk
 """
 
 import sys, os
@@ -69,6 +69,8 @@ weather_data = reduce_mem_usage(weather_data)
 elec_data = reduce_mem_usage(elec_data)
 
 #%%
+# Candidates for verification tutorial
+# Robin_education_Takako, Rat_education_Alfonso, Rat_education_Marcos, Rat_education_Patty, Rat_public_Mark, Rat_warehouse_Eloisa
 
 sample_buildings = ['Rat_education_Alfonso', 'Cockatoo_public_Shad']
 # Visualize a building with break points
@@ -80,6 +82,12 @@ fig, ax = plt.subplots()
 elec_data[sample_buildings[1]]['03-10-2017':'03-17-2017'].plot(ax=ax)
 plt.ylabel('KWh')
 
+# for c in elec_data.columns.values:
+#     if 'Rat' in c:
+#         elec_data[c].plot(legend = True)
+#         plt.show()
+#     else: 
+#         continue
 #%%
 
 # Keep only data from a specific site
@@ -107,7 +115,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 scaler = MinMaxScaler()
 sc_elec_reduced_data = scaler.fit_transform(elec_reduced_data)
-#%%
+
 sc_elec_reduced_data = pd.DataFrame(data = sc_elec_reduced_data, columns = elec_reduced_data.columns, 
                                     index = elec_reduced_data.index)
 #%%

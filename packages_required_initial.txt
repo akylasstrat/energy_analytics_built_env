@@ -5,5 +5,3 @@ cvxpy
 matplotlib
 scikit-learn
 scipy
-torch
-gurobipy

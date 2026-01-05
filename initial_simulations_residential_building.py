@@ -57,7 +57,6 @@ df, metrics, hourly = dwelling.simulate()
 #%%
 # Plot results
 fig = CreateFigures.plot_power_stack(df[:1000])
-
 fig = CreateFigures.plot_power_stack(df)
 
 #%%

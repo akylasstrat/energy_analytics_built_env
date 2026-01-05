@@ -1,13 +1,16 @@
-import sys, os
-cd = os.path.dirname(__file__)  #Current directory
-sys.path.append(cd)
+# -*- coding: utf-8 -*-
+"""
+Simulating residential building demand using OCHRE
 
+@author: ucbva19
+"""
+
+import sys, os
 import glob
 import datetime as dt
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from ochre import Dwelling, CreateFigures, Analysis
 from ochre.utils import default_input_path
 
@@ -16,9 +19,7 @@ plt.rcParams['figure.dpi'] = 600
 
 #%%
 
-# Base dwelling
-
-# Pick any of the included HPXML + schedule files
+# Pick any of the included HPXML + schedule files for building data
 hpxml_file_1 = os.path.join(default_input_path, "Input Files", "bldg0112631-up11.xml")
 hpxml_file_2 = os.path.join(default_input_path, "Input Files", "bldg0112631-up00.xml")
 schedule_file = os.path.join(default_input_path, "Input Files", "bldg0112631_schedule.csv")
@@ -32,24 +33,23 @@ schedule = pd.read_csv(schedule_file)
 weather = pd.read_csv(weather_file)
 
 
-# Define Dwelling arguments
+# Define arguments for dwelling object, common across all examples
 common_dwelling_args = {
     "start_time": dt.datetime(2018, 1, 1, 0, 0),
     "time_res": dt.timedelta(minutes = 15),
     "duration": dt.timedelta(days = 365),
 
     "hpxml_schedule_file": schedule_file,
-    "weather_file": weather_file,
-    
+    "weather_file": weather_file,    
     "verbosity": 7,
     "metrics_verbosity": 3,}
 
+# Base dwelling: base case with electric heat pump
 dwelling_elec_args = common_dwelling_args.copy()
-
 dwelling_elec_args['hpxml_file'] = hpxml_file_1
+
 # Create model and simulate
 dwelling_elec = Dwelling(**dwelling_elec_args)
-# Simulate
 df_elec, metrics_elec, _ = dwelling_elec.simulate()
 
 
@@ -58,13 +58,12 @@ fig = CreateFigures.plot_power_stack(df_elec[500:1000])
 fig = CreateFigures.plot_power_stack(df_elec)
 fig = CreateFigures.plot_daily_profile(df_elec, 'Total Electric Power (kW)', plot_max=True, plot_min=True)
 
-# Dwelling 2
+# Dwelling 2: base case with **gas** boiler (same arguments, different hpxml file)
 dwelling_gas_args = common_dwelling_args.copy()
 dwelling_gas_args['hpxml_file'] = hpxml_file_2
 
 # Create model and simulate
 dwelling_gas = Dwelling(**dwelling_gas_args)
-# Simulate
 df_gas, metrics_gas, _ = dwelling_gas.simulate()
 
 # Plot stacked power
@@ -73,6 +72,8 @@ fig = CreateFigures.plot_power_stack(df_gas)
 fig = CreateFigures.plot_daily_profile(df_gas, 'Total Electric Power (kW)', plot_max=True, plot_min=True)
 
 #%%
+
+# Some basic plots to explore results
 fig, ax = plt.subplots()
 for df, lab in [(df_elec,"dwelling_elec"), (df_elec,"dwelling_gas")]:
     ax.plot(df.index, df.get("Total Electric Power (kW)", np.nan), label=f"{lab} elec (kW)")
@@ -84,7 +85,6 @@ for df, lab in [(df_elec,"dwelling_elec"), (df_elec,"dwelling_gas")]:
         ax.plot(df.index, df["Total Gas Power (therms/hour)"], label=f"{lab} gas (therms/h)")
 ax.set_ylabel("therms/h"); ax.legend(); ax.set_title("Total gas demand")
 
-
 fig, ax = plt.subplots()
 ax.plot(df_elec.index, df_elec.get("HVAC Heating Delivered (W)", np.nan), label="dwelling_elec delivered (W)")
 ax.plot(df_gas.index, df_gas.get("HVAC Heating Delivered (W)", np.nan), label="dwelling_gas delivered (W)")
@@ -95,8 +95,7 @@ ax.plot(df_elec.index, df_elec.get("HVAC Heating Electric Power (kW)", np.nan), 
 ax.plot(df_gas.index, df_gas.get("HVAC Heating Gas Power (therms/hour)", np.nan), label="dwelling_gas HVAC gas (therms/h)")
 ax.legend(); ax.set_title("Energy input to deliver heating")
 
-#%%
-
+# Scatterplot of heating input vs outdoor temperature to maintain the same internal temperature
 Tout = 'Temperature - Outdoor (C)'
 Tin  = 'Temperature - Indoor (C)'
 
@@ -126,10 +125,11 @@ def plot_stack(df, title):
     ax.legend(loc="upper right", ncol=2, fontsize=7)
     ax.set_ylabel("kW"); ax.set_title(title)
 
-plot_stack(df_elec, "dwelling_elec: electric end-use stack")
-plot_stack(df_gas, "dwelling_gas: electric end-use stack")
+plot_stack(df_elec[:500], "dwelling_elec: electric end-use stack")
+plot_stack(df_gas[:500], "dwelling_gas: electric end-use stack")
 
 #%%
+
 fig, ax = plt.subplots()
 ax.plot(df_elec.index, df_elec["Total Electric Energy (kWh)"], label="dwelling_elec cum kWh")
 ax.plot(df_gas.index, df_gas["Total Electric Energy (kWh)"], label="dwelling_gas gas kWh")
@@ -148,23 +148,18 @@ ax.plot(np.sort(df_gas["Total Electric Power (kW)"].values)[::-1], label="dwelli
 ax.set_xlabel("Ranked timesteps"); ax.set_ylabel("kW")
 ax.legend(); ax.set_title("Load duration curve (total electric)")
 
-#%% Add new equipment to dwelling_elec
+#%%%%%%%%%%%%%%%%%%%%%
+############# Add new equipment to dwelling_elec
 
 # Add PV, estimate reductions
-
-new_equipment = { "PV": {
-        "capacity": 5,}}
-
+new_equipment = { "PV": {"capacity": 5,}}
 dwelling_elec_PV_args = {**dwelling_elec_args,  "Equipment": new_equipment,}
 
-# Create Dwelling model
+# Create new dwelling model and simulate
 dwelling_elec_PV = Dwelling(**dwelling_elec_PV_args)
-
 df_elec_PV, metrics_elec_PV, _ = dwelling_elec_PV.simulate()
 
-
 # estimate the effect on the average profile
-
 fig = CreateFigures.plot_daily_profile(df_elec[:'2018-01-30'], 'Total Electric Power (kW)', plot_max=True, plot_min=True)
 fig = CreateFigures.plot_daily_profile(df_elec_PV[:'2018-01-30'], 'Total Electric Power (kW)', plot_max=True, plot_min=True)
 
@@ -195,11 +190,10 @@ new_equipment = { "PV": {"capacity": 5,},
 
 dwelling_elec_PV_BESS_args = {**dwelling_elec_PV_args,  "Equipment": new_equipment,}
 
-# Create Dwelling model
+# Create dwelling model
 dwelling_elec_PV_BESS = Dwelling(**dwelling_elec_PV_BESS_args)
 df_elec_PV_BESS, metrics_elec_PV_BESS, _ = dwelling_elec_PV_BESS.simulate()
 
-#%%
 fig, ax = plt.subplots(ncols = 2, figsize = (10,4), sharey = True)
 
 fig, ax = plt.subplots(ncols = 2, figsize = (10,4), sharey = True)
@@ -224,58 +218,6 @@ plt.xlabel('Hour of day')
 plt.title('Summer')
 plt.legend()
 plt.show()
-
-
-#%%
-# ------------------------------------------
-# Same building and equipment, different occupants
-
-# Base dwelling
-
-# Pick any of the included HPXML + schedule files
-hpxml_file_1 = os.path.join(default_input_path, "Input Files", "bldg0112631-up11.xml")
-hpxml_file_2 = os.path.join(default_input_path, "Input Files", "bldg0112631-up00.xml")
-schedule_file = os.path.join(default_input_path, "Input Files", "bldg0112631_schedule.csv")
-weather_file = os.path.join(default_input_path, "Weather", "USA_CO_Denver.Intl.AP.725650_TMY3.epw")
-
-print("HPXML:", hpxml_file_1)
-print("Schedule:", schedule_file)
-print("Weather:", weather_file)
-
-schedule = pd.read_csv(schedule_file)
-
-upd_schedule = schedule.copy()
-upd_schedule['occupants'] = 3.0
-
-upd_schedule.to_csv('upd_bldg0112631_schedule.csv', index = False)
-weather = pd.read_csv(weather_file)
-
-upd_schedule_file = f'{cd}\\upd_bldg0112631_schedule.csv'
-
-upd_dwelling_elec_args = dwelling_elec_args
-upd_dwelling_elec_args['hpxml_schedule_file'] = upd_schedule_file
-
-# Create model and simulate
-upd_dwelling_elec = Dwelling(**upd_dwelling_elec_args)
-# Simulate
-upd_df_elec, upd_metrics_1, _ = upd_dwelling_elec.simulate()
-
-#%%
-
-fig = CreateFigures.plot_power_stack(df_elec[:1000])
-fig = CreateFigures.plot_power_stack(upd_df_elec[:1000])
-
-fig = CreateFigures.plot_daily_profile(df_elec, 'Total Electric Power (kW)', plot_max=True, plot_min=True)
-fig = CreateFigures.plot_daily_profile(upd_df_elec, 'Total Electric Power (kW)', plot_max=True, plot_min=True)
-
-#%% Add storage to dwelling with PV
-
-
-#%%
-fig = CreateFigures.plot_daily_profile(df_elec, 'Total Electric Power (kW)', plot_max=True, plot_min=True)
-fig = CreateFigures.plot_daily_profile(upd_df_elec, 'Total Electric Power (kW)', plot_max=True, plot_min=True)
-fig = CreateFigures.plot_daily_profile(df_elec_PV_BESS, 'Total Electric Power (kW)', plot_max=True, plot_min=True)
-
 
 
 

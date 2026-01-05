@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Assessment 1
+Generate plot for summative assessment 1
 
-@author: ucbva19
+@author: a.stratigakos@ucl.ac.uk
 """
 
 import sys, os
@@ -11,12 +11,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-#%%
-path = 'C:\\Users\\ucbva19\\Git projects\\energy_analytics_built_env'
-file = f'{path}\\global-floor-area-and-buildings-energy-intensity.csv'
+path = 'C:\\Users\\ucbva19\\Git projects\\energy_analytics_built_env\\data raw'
+file = f'{path}\\global-floor-area-and-buildings-energy-intensity-in-the-net-zero-scenario-2010-2030.csv'
 
 data = pd.read_csv(file, index_col = 0)
-#%%
 
 rel_data = data.copy()
 rel_data = 100*(data-data.loc[2022])/data
