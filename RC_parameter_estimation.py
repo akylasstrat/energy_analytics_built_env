@@ -64,6 +64,7 @@ x_coeff = lsq_solution.x
 tau = dt_h/x_coeff[0]
 C = dt_h/x_coeff[1]
 R = tau/C
+g = x_coeff[2]/x_coeff[1]
 
 T_fitted = x_coeff@A.T
 
@@ -79,6 +80,7 @@ print('RC parameters')
 print(f'tau:{tau}')
 print(f'C:{C}')
 print(f'R:{R}')
+print(f'g:{g}')
 
 # To confirm, check these values against Shuwen's paper
 
