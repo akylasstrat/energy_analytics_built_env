@@ -17,10 +17,8 @@ plt.rcParams['figure.dpi'] = 600
 #%% Load measurement data
 
 data_path = 'C:\\Users\\ucbva19\\Git projects\\energy_analytics_built_env\\data raw'
-data = pd.read_csv(f'{data_path}\\10mins_solpap.csv', index_col = 0)
-
-# Keep a subset of features
-data = data[['T_External (degC)', 'P_tot (W)', 'Solar (W/m2)', 'T_Average (degC)']]
+data = pd.read_csv(f'{data_path}\\10mins_solpap_2016.csv', index_col = 0, parse_dates = True)
+data.index = pd.to_datetime(data.index, format="%d/%m/%Y %H:%M")
 
 #%% Pre-processing
 

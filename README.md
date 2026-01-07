@@ -1,10 +1,6 @@
-# BENV0092: Energy Data Analytics in the Built Environment 25/26
+# BENV0092: Energy Data Analytics in the Built Environment 25/26 (Internal)
 
-This repository contains the coding material for module BENV0092: Energy Data Analytics in the Built Environment 25/26, which is part of the [Energy Systems and Data Analytics (ESDA) MSc](\href https://www.ucl.ac.uk/prospective-students/graduate/taught-degrees/energy-systems-and-data-analytics-esda-msc).
-
-### Code Organization
-
-### Reproducing the Results
+This repository is used to develop the coding material for BENV0092.
 
 ### Set-up
 
