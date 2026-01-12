@@ -46,6 +46,26 @@ def reduce_mem_usage(df, verbose=True):
     if verbose: print('Mem. usage decreased to {:5.2f} Mb ({:.1f}% reduction)'.format(end_mem, 100 * (start_mem - end_mem) / start_mem))
     return df
 
+def accuracy_metrics(actual, predictions):
+    
+    actual_copy = actual.copy().reshape(-1,1)
+    predictions_copy = predictions.copy().reshape(-1,1)
+    
+    error = actual_copy - predictions_copy
+    
+    assert(error.shape[0] == len(actual_copy))
+    if error.ndim > 1:        
+        assert(error.shape[1] == 1)
+    
+    rmse = np.sqrt( np.square(error).mean() )
+    mae = np.abs(error).mean()
+    
+    print(f'RMSE: {rmse}')
+    print(f'MAE: {mae}')
+    
+    return rmse, mae
+
+
 #%% Explore the Building Data Genome 2 (BDG2) Data-Set
 
 bdg2_path = 'C:\\Users\\ucbva19\\Git projects\\building-data-genome-project-2'
@@ -63,10 +83,14 @@ weather_data.info()
 
 elec_data = pd.read_csv(f'{path_meters}\\electricity_cleaned.csv', index_col = 0, parse_dates=True)
 elec_data.info()
-
-metadata = reduce_mem_usage(metadata)
+    
 weather_data = reduce_mem_usage(weather_data)
 elec_data = reduce_mem_usage(elec_data)
+
+# #%%
+# # Buildings data
+# weather_data.to_csv(f'{path_weather}\\weather_memory_efficient.csv')
+# elec_data.to_csv(f'{path_meters}\\electricity_cleaned_memory_efficient.csv')
 
 #%%
 # Candidates for verification tutorial
@@ -78,10 +102,12 @@ selected_building = ['Rat_education_Marcos']
 fig, ax = plt.subplots()
 elec_data[selected_building]['01-01-2017':].plot(ax=ax)
 plt.ylabel('KWh')
+plt.show()
 
 fig, ax = plt.subplots()
 elec_data[selected_building].plot(ax=ax)
 plt.ylabel('KWh')
+plt.show()
 
 #%%
 
@@ -95,10 +121,28 @@ selected_site_id = metadata.loc[selected_building]['site_id']
 X = weather_data[weather_data.site_id == selected_site_id.values[0]][['airTemperature', 'dewTemperature', 
                                                                      'precipDepth1HR', 'seaLvlPressure', 'windDirection', 'windSpeed']]
 
+X ['Temp_sq'] = X['airTemperature']**2
+
 X['Hour'] = X.index.hour
 X['Month'] = X.index.month
 X['Day_of_week'] = X.index.weekday
 X['Day_of_year'] = X.index.day_of_year
+
+# Hour: 0–23
+X["Hour_sin"] = np.sin(2 * np.pi * X["Hour"] / 24)
+X["Hour_cos"] = np.cos(2 * np.pi * X["Hour"] / 24)
+
+# Month: 1–12
+X["Month_sin"] = np.sin(2 * np.pi * (X["Month"] - 1) / 12)
+X["Month_cos"] = np.cos(2 * np.pi * (X["Month"] - 1) / 12)
+
+# Day of week: typically 1–7 (adjust if your data uses 0–6)
+X["DayOfWeek_sin"] = np.sin(2 * np.pi * (X["Day_of_week"] - 1) / 7)
+X["DayOfWeek_cos"] = np.cos(2 * np.pi * (X["Day_of_week"] - 1) / 7)
+
+# Day of year: 1–365 (or 366 if leap years are included)
+X["DayOfYear_sin"] = np.sin(2 * np.pi * (X["Day_of_year"] - 1) / 365)
+X["DayOfYear_cos"] = np.cos(2 * np.pi * (X["Day_of_year"] - 1) / 365)
 
 
 Y = Y.interpolate(method='linear')
@@ -117,8 +161,25 @@ Y = pd.merge(Y, X, left_index=True, right_index=True)[selected_building]
 #%%
 
 # !!!! For model selection, we need to create test set in the base period as well, evaluate out-of-sample, pick model, re-train using all the data
-base_period_start = '2016-01-01'
-base_period_end = '2017-06-01'
+base_period_training_start = '2016-01-01'
+base_period_training_end = '2017-02-01'
+base_period_testing_start = '2017-02-02'
+base_period_testing_end = '2017-06-01'
+
+X_base = X[base_period_training_start:base_period_testing_end]
+Y_base = Y[base_period_training_start:base_period_testing_end]
+
+X_report = X[base_period_testing_end:]
+Y_report = Y[base_period_testing_end:]
+
+train_X_base = X_base[base_period_training_start:base_period_training_end].values
+train_Y_base = Y_base[base_period_training_start:base_period_training_end].values
+
+test_X_base = X_base[base_period_testing_start:base_period_testing_end].values
+test_Y_base = Y_base[base_period_testing_start:base_period_testing_end].values
+
+# base_period_start = '2016-01-01'
+# base_period_end = '2017-06-01'
 
 report_period_start = '2017-07-01'
 
@@ -127,26 +188,53 @@ report_period_start = '2017-07-01'
 from sklearn.ensemble import ExtraTreesRegressor
 
 # X matrix has some missing indices, need to merge on index
-trainX = X[base_period_start:base_period_end]
-trainY = Y[base_period_start:base_period_end]
-
-et_model = ExtraTreesRegressor(n_estimators = 500)
+et_model = ExtraTreesRegressor(n_estimators = 1000)
 
 # fit model in base period
-et_model.fit(trainX, trainY)
+et_model.fit(train_X_base, train_Y_base)
 
-#%%
-Y_counterfactual = et_model.predict(X[report_period_start:])
+Y_et_pred = et_model.predict(test_X_base)
 
+_,_ = accuracy_metrics(test_Y_base, Y_et_pred)
+
+
+#%% Linear model
+from sklearn.linear_model import LinearRegression
+
+lr_model = LinearRegression()
+# fit model in base period
+lr_model.fit(train_X_base, train_Y_base)
+
+Y_lr_pred = lr_model.predict(test_X_base)
+_,_ = accuracy_metrics(test_Y_base, Y_lr_pred)
+
+#%% Visualize forecasts
+
+plt.plot(test_Y_base[-2*168:], '--', label = 'Actual', color = 'black')
+plt.plot(Y_et_pred[-2*168:], label = 'ET_pred')
+plt.plot(Y_lr_pred[-2*168:], label = 'LR_pred')
+plt.legend()
+plt.show()
+
+#%% Counterfactual estimation
+
+# Select your model
+
+selected_model = et_model
+
+selected_model.fit(X_base.values, Y_base.values)
+
+# Predict counterfactual
+Y_counterfactual = selected_model.predict(X_report)
+
+# Re-train model using all the availabe data
 plt.plot(Y_counterfactual[:1000])
 plt.plot(Y[report_period_start:].values[:1000])
 plt.show()
 
-# Hourly Savings = Counterfactual Baseline (Predicted) - Actual Metered Consumption
-
-hourly_savings = Y_counterfactual.reshape(-1,1) - Y[report_period_start:]
-
 #%%
+# Hourly Savings = Counterfactual Baseline (Predicted) - Actual Metered Consumption
+hourly_savings = Y_counterfactual.reshape(-1,1) - Y_report
 
 print(f'Average hourly savings: {hourly_savings.values.mean()} KWh')
 
