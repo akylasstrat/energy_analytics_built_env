@@ -44,16 +44,24 @@ def accuracy_metrics(actual, predictions):
 # Load
 # -------------------------
 
-path = 'C:\\Users\\ucbva19\\Git projects\\energy_analytics_built_env\\data raw'
-df = pd.read_csv(f"{path}\\Energy Performance Cetrificate data.csv")  # change path
+# path = 'C:\\Users\\ucbva19\\Git projects\\energy_analytics_built_env\\data raw'
+# df = pd.read_csv(f"{path}\\Energy Performance Cetrificate data.csv")  # change path
+
+path = 'C:\\Users\\ucbva19\\Git projects\\energy_analytics_built_env\\data raw\\epc-certificates-Islington'
+df = pd.read_csv(f"{path}\\certificates.csv")  # change path
+
+# drop columns with NaNs
+df = df.dropna(axis=1)
 
 print(df.head())
-print(df.shape)
 print(df.isna().sum())
 
-for col in df.columns:
-    if df.isna().sum().loc[col] > 1000:
-        del df[col]
+assert(df.isna().sum().sum() == 0)
+
+# for col in df.columns:    
+#     if df.isna().sum().loc[col] > 500:
+#         print(col)
+#         del df[col]
 
 #%%
 
@@ -71,22 +79,20 @@ for col in df.columns:
 
 # 6. Do not change floor area, occupancy, or fuel prices.
 
-df = df.dropna()
-variables_retained = ['ENERGY_CONSUMPTION_CURRENT', 'ENERGY_CONSUMPTION_POTENTIAL', 
-                      'HEATING_COST_CURRENT', 'HEATING_COST_POTENTIAL',
-                      'POTENTIAL_ENERGY_EFFICIENCY', 
-                      'CURRENT_ENERGY_EFFICIENCY', 
-                      'TOTAL_FLOOR_AREA', 'PROPERTY_TYPE', 'BUILT_FORM', 
-                      'WALLS_ENERGY_EFF', 'MAINHEAT_ENERGY_EFF', 
-                      'LIGHTING_ENERGY_EFF', 'LIGHTING_COST_CURRENT', 'LIGHTING_COST_POTENTIAL']
+# variables_retained = ['ENERGY_CONSUMPTION_CURRENT', 'ENERGY_CONSUMPTION_POTENTIAL', 
+#                       'HEATING_COST_CURRENT', 'HEATING_COST_POTENTIAL',
+#                       'POTENTIAL_ENERGY_EFFICIENCY', 
+#                       'CURRENT_ENERGY_EFFICIENCY', 
+#                       'TOTAL_FLOOR_AREA', 'PROPERTY_TYPE', 'BUILT_FORM', 
+#                       'WALLS_ENERGY_EFF', 'MAINHEAT_ENERGY_EFF', 
+#                       'LIGHTING_ENERGY_EFF', 'LIGHTING_COST_CURRENT', 'LIGHTING_COST_POTENTIAL']
 
-
-data = df[variables_retained]
+# data = df[variables_retained].copy()
 
 # Create variables to indicate savings
-data['potential_energy_savings'] = data['ENERGY_CONSUMPTION_CURRENT'] - data['ENERGY_CONSUMPTION_POTENTIAL']
-data['potential_heat_cost_savings'] = data['HEATING_COST_CURRENT'] - data['HEATING_COST_POTENTIAL']
-data['potential_light_cost_savings'] = data['LIGHTING_COST_CURRENT'] - data['LIGHTING_COST_POTENTIAL']
+df['potential_energy_savings'] = df['ENERGY_CONSUMPTION_CURRENT'] - df['ENERGY_CONSUMPTION_POTENTIAL']
+df['potential_heat_cost_savings'] = df['HEATING_COST_CURRENT'] - df['HEATING_COST_POTENTIAL']
+df['potential_light_cost_savings'] = df['LIGHTING_COST_CURRENT'] - df['LIGHTING_COST_POTENTIAL']
 
 
 #%% Step 1: Pre-process and fit regression model
@@ -95,7 +101,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 from sklearn.ensemble import ExtraTreesRegressor
 
 # Select target variable from ['ENERGY_CONSUMPTION_CURRENT', 'HEATING_COST_CURRENT', 'LIGHTING_COST_CURRENT']
@@ -103,13 +109,13 @@ from sklearn.ensemble import ExtraTreesRegressor
 target_current = 'ENERGY_CONSUMPTION_CURRENT'
 target_potential = 'ENERGY_CONSUMPTION_POTENTIAL'
 
-Y = data[[target_current, target_potential]]
+Y = df[[target_current, target_potential]]
 
 numerical_features = ['CURRENT_ENERGY_EFFICIENCY', 'TOTAL_FLOOR_AREA']
-categorical_features = ['PROPERTY_TYPE', 'BUILT_FORM', 'WALLS_ENERGY_EFF', 
-                       'MAINHEAT_ENERGY_EFF', 'LIGHTING_ENERGY_EFF']
+ordinal_features = ['WALLS_ENERGY_EFF', 'MAINHEAT_ENERGY_EFF', 'LIGHTING_ENERGY_EFF', 'HOT_WATER_ENERGY_EFF']
+categorical_features = ['PROPERTY_TYPE', 'BUILT_FORM']
 
-X = data[numerical_features+categorical_features]
+X = df[numerical_features + categorical_features + ordinal_features]
 
 train_X, test_X, train_Y, test_Y = train_test_split(X, Y, test_size=0.33, random_state=42)
 
@@ -122,10 +128,26 @@ test_potential_Y = test_Y[target_potential]
 # ------------------
 # Preprocessing
 # ------------------
-preprocessor = ColumnTransformer(
+
+categories_list = [['Bungalow', 'Flat', 'House', 'Maisonette'], 
+              ['Not Recorded', 'Detached', 'Enclosed End-Terrace', 'Enclosed Mid-Terrace','End-Terrace', 'Mid-Terrace', 'Semi-Detached']]
+
+ord_list =   [['Very Poor', 'Poor', 'Average', 'Good', 'Very Good'], 
+              ['Very Poor', 'Poor', 'Average', 'Good', 'Very Good'],
+              ['Very Poor', 'Poor', 'Average', 'Good', 'Very Good'], 
+              ['Very Poor', 'Poor', 'Average', 'Good', 'Very Good']]
+
+one_hot_preprocessor = ColumnTransformer(
     transformers=[("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features),
+                  ("ord", OrdinalEncoder(categories = ord_list), ordinal_features),
                   ("num", "passthrough", numerical_features),])
 
+# ordinal_preprocessor = ColumnTransformer(
+#     transformers=[("cat", OrdinalEncoder(categories = categories_list), categorical_features),
+#                   ("num", "passthrough", numerical_features),])
+
+# Select preprocesser 
+preprocessor = one_hot_preprocessor
 
 # ------------------
 # LR Model pipeline
@@ -182,6 +204,9 @@ plt.xlabel("Importance")
 plt.tight_layout()
 plt.show()
 
+#%% Alternatively, use LabelEncoding instead of One-hot encoding
+
+
 #%% Step 2. pick intervention for a specific type of house
 
 # List of interventions
@@ -207,40 +232,21 @@ counterfactual_Y = et_model.predict(retrofit_X)
 delta_energy_predicted = test_current_Y.iloc[mask] - counterfactual_Y
 delta_energy_dataset = test_current_Y.iloc[mask] - test_potential_Y.iloc[mask]
 
-
+    
 plt.scatter(delta_energy_predicted, delta_energy_dataset)
 plt.show()
-
-#%%
-
-#ENERGY_CONSUMPTION_CURRENT is in KWH/m2 and it is the sum of electricity and gas consumption for each home
-#create a new variable with consumption/m2 * m2, to get consumption.
-# -------------------------
-# Create total consumption (kWh)
-# -------------------------
-df["ENERGY_CONSUMPTION"] = df["ENERGY_CONSUMPTION_CURRENT"] * df["TOTAL_FLOOR_AREA"]
-print(df["ENERGY_CONSUMPTION"].describe())
-
-# -------------------------
-# Filter outliers (Adan & Fuerst-like bounds)
-# -------------------------
-df = df[(df["ENERGY_CONSUMPTION"] > 3100) & (df["ENERGY_CONSUMPTION"] < 75000)]
-print(df.shape)
-print(df["ENERGY_CONSUMPTION"].describe())
 
 #%%
 # -------------------------
 # Plot distribution (rough ggplot freqpoly)
 # -------------------------
 plt.figure()
-x = df["ENERGY_CONSUMPTION"].dropna()
-plt.hist(x, bins=200, density=True)
-plt.axvline(x.mean(), linestyle="--", color = 'black')
-plt.xlim(0, 200000)
+plt.hist(df["ENERGY_CONSUMPTION_CURRENT"], bins=200, density=True)
+plt.axvline(df["ENERGY_CONSUMPTION_CURRENT"].mean(), linestyle="--", color = 'black')
+plt.xlim(0, 3000)
 plt.title("ENERGY_CONSUMPTION distribution")
 plt.tight_layout()
 plt.show()
-#%%
 
 # -------------------------
 # EPC rating counts
@@ -248,11 +254,10 @@ plt.show()
 df["CURRENT_ENERGY_RATING"] = df["CURRENT_ENERGY_RATING"].astype("category")
 print(df["CURRENT_ENERGY_RATING"].value_counts())
 
-#%%
 plt.figure()
 for k, g in df.groupby("CURRENT_ENERGY_RATING"):
-    plt.hist(g["ENERGY_CONSUMPTION"], bins=150, histtype="step", label=str(k))
-plt.xlim(0, df["ENERGY_CONSUMPTION"].quantile(0.99))
+    plt.hist(g["ENERGY_CONSUMPTION_CURRENT"], bins=150, histtype="step", label=str(k))
+plt.xlim(0, df["ENERGY_CONSUMPTION_CURRENT"].quantile(0.99))
 plt.title("Consumption grouped by EPC rating")
 plt.legend(ncol=2, fontsize=8)
 plt.show()
@@ -261,11 +266,11 @@ plt.show()
 # Boxplot by EPC
 plt.figure()
 cats = sorted(df["CURRENT_ENERGY_RATING"].dropna().unique())
-data = [df.loc[df["CURRENT_ENERGY_RATING"] == c, "ENERGY_CONSUMPTION"].values for c in cats]
+data = [df.loc[df["CURRENT_ENERGY_RATING"] == c, "ENERGY_CONSUMPTION_CURRENT"].values for c in cats]
 plt.boxplot(data, labels=cats, showfliers=False)
 plt.title("Consumption by EPC rating (boxplot)")
 plt.xlabel("EPC")
-plt.ylabel("ENERGY_CONSUMPTION (kWh)")
+plt.ylabel("ENERGY_CONSUMPTION $(kWh/m^2)$")
 plt.tight_layout()
 plt.show()
 #%%
@@ -273,7 +278,7 @@ plt.show()
 # Consumption by property type (basic descriptive stats)
 # -------------------------
 if "PROPERTY_TYPE" in df.columns:
-    grp = df.groupby("PROPERTY_TYPE")["ENERGY_CONSUMPTION"]
+    grp = df.groupby("PROPERTY_TYPE")["ENERGY_CONSUMPTION_CURRENT"]
     desc = grp.agg(["count", "mean", "std", "median"])
     print(desc.sort_values("mean"))
 #%%
@@ -292,15 +297,13 @@ plt.tight_layout()
 plt.show()
 
 #%%
-df = df[(df["TOTAL_FLOOR_AREA"] <= 300) & (df["TOTAL_FLOOR_AREA"] > 20)]
-print(df.shape)
 
 # Area vs consumption scatter + regression line (quick)
 plt.figure()
-plt.scatter(df["TOTAL_FLOOR_AREA"], df["ENERGY_CONSUMPTION"], s=5, alpha=0.2)
-m, b = np.polyfit(df["TOTAL_FLOOR_AREA"], df["ENERGY_CONSUMPTION"], 1)
-xs = np.linspace(df["TOTAL_FLOOR_AREA"].min(), df["TOTAL_FLOOR_AREA"].max(), 200)
-plt.plot(xs, m * xs + b)
+plt.scatter(df["TOTAL_FLOOR_AREA"], df["ENERGY_CONSUMPTION_CURRENT"], s=5, alpha=0.2)
+# m, b = np.polyfit(df["TOTAL_FLOOR_AREA"], df["ENERGY_CONSUMPTION_CURRENT"], 1)
+# xs = np.linspace(df["TOTAL_FLOOR_AREA"].min(), df["TOTAL_FLOOR_AREA"].max(), 200)
+# plt.plot(xs, m * xs + b)
 plt.title("Energy consumption vs total floor area")
 plt.xlabel("TOTAL_FLOOR_AREA")
 plt.ylabel("ENERGY_CONSUMPTION (kWh)")
@@ -339,7 +342,7 @@ if "WALLS_DESCRIPTION" in df.columns:
     print(df["WALLS_DESCRIPTION_RECODED"].value_counts())
 
     # Mean consumption by wall type (bar)
-    m = df.groupby("WALLS_DESCRIPTION_RECODED")["ENERGY_CONSUMPTION"].mean().sort_values()
+    m = df.groupby("WALLS_DESCRIPTION_RECODED")["ENERGY_CONSUMPTION_CURRENT"].mean().sort_values()
     plt.figure()
     plt.bar(m.index, m.values)
     plt.xticks(rotation=30, ha="right")

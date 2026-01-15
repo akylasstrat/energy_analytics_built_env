@@ -108,8 +108,13 @@ Predictors, target_pred, fixed_pred = create_vanilla_predictors(meteo_df, temp_c
 target_scaler = MinMaxScaler()
 pred_scaler = MinMaxScaler()
 
-start = '2005-01-01'
-split = '2007-01-01'
+train_start = '2005-01-01'
+train_end = '2006-12-31'
+test_start = '2007-01-01'
+
+train_load_df = load_df.copy()
+train_load_df[test_start:] = np.nan
+train_load_df.to_csv(gefcom2012_path+'\\gefcom12_load_training.csv')
 
 zone = 21
 
@@ -117,20 +122,19 @@ print('Zone: ', zone)
 Y = load_df['Z'+str(zone)].to_frame()
 
 
-train_Y = Y[start:split].values
-test_Y = Y[split:].values
-target_Y = Y[split:]
+train_Y = Y[train_start:train_end].values
+test_Y = Y[test_start:].values
+target_Y = Y[test_start:]
 
-train_X = Predictors[start:split].values
-test_X = Predictors[split:].values
+train_X = Predictors[train_start:train_end].values
+test_X = Predictors[test_start:].values
 
 
-sc_train_Y = target_scaler.fit_transform(Y[start:split])
-sc_test_Y = target_scaler.transform(Y[split:])
+sc_train_Y = target_scaler.fit_transform(Y[train_start:train_end])
+sc_test_Y = target_scaler.transform(Y[test_start:])
 
-sc_train_X = pred_scaler.fit_transform(Predictors[start:split])
-sc_test_X = pred_scaler.transform(Predictors[split:])
-
+sc_train_X = pred_scaler.fit_transform(Predictors[train_start:train_end])
+sc_test_X = pred_scaler.transform(Predictors[test_start:])
 
 #%%%% Linear models: linear regresion, lasso, ridge
 
